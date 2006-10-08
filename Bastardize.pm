@@ -1,68 +1,44 @@
 ## -*- Cperl -*-
 package Text::Bastardize;
-$VERSION = 0.06;
+$VERSION = 0.07;
 use strict;
+use warnings;
 
-###############################################################################
-## Copyright (C) 1999 julian fondren
+# ----------------------------------------------------------------------
+# Copyright (C) 1999-2006 Julian Fondren <ayrnieu@gmail.com>
+# Licensed as with perl itself.
+# ----------------------------------------------------------------------
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 2 of
-## the License, or (at your option) any later version.
-
-## This program is distributed in the hope that it will be
-## useful, but WITHOUT ANY WARRANTY; without even the implied
-## warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-## PURPOSE.  See the GNU General Public License for more details.
-
-## You should have received a copy of the GNU General Public
-## License along with this program; if not, write to the Free
-## Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-## MA 02111-1307 USA
-###############################################################################
-
-###############################################################################
-## Object Constructor; the object is an array, which is most useful in text
-## conversion.
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
   my $self = [];
-  bless($self, $class);
-  return $self;
-}
-###############################################################################
-
-
-sub peek {
-  # return value of object
-  my $self = shift;
-  return @{$self};
+  bless($self, $class)
 }
 
+sub peek { @{+shift} }
 sub charge {
-  # alter value of object
   my $self = shift;
-  return @{$self} = @_;
+  @{$self} = @_;
+  $self
+}
+
+sub disemvowel {
+  my @d = shift->peek;
+  tr/aeiouAEIOU//d for @d;
+  @d
 }
 
 sub rot13 {
-  # return rot13'd value of object
   my $self = shift;
-  my @rot13;
-  foreach ($self->peek()) {
-    y/a-zA-Z/n-za-mN-ZA-M/;
-    push @rot13, $_;
-  }
-  return @rot13;
+  map { tr/a-zA-Z/n-za-mN-ZA-M/; $_ } $self->peek
 }
 
 sub k3wlt0k {
   # a slightly modified version of Fmh's t0k.pl
   my $self = shift;
-  my @k3wlt0k;
-  foreach ($self->peek()) {
+  my @k = $self->peek;
+  for (@k) {
     y/A-Z/a-z/;
     s/\bth/d/sg;
     s/ck\b/x0r/sg;
@@ -92,17 +68,14 @@ sub k3wlt0k {
     s/3z/z3/sg;
     s/3r/ur/sg;
     y/a-z/A-Z/;
-    push @k3wlt0k, $_;
   }
-  return @k3wlt0k;
+  @k
 }
 
-
 sub rdct {
-  # hyperreductionize
   my $self = shift;
-  my @rdct;
-  foreach ($self->peek()) {
+  my @r = $self->peek;
+  for (@r) {
     y/A-Z/a-z/;
     y/!#.,?\'\";//;
     s/of/uv/sg;
@@ -113,12 +86,13 @@ sub rdct {
     s/are/r/sg;
     s/youre?/ur/sg;
     s/\B(?:a|e|i|o|u)\B//sg;
-    push @rdct, $_;
   }
-  return @rdct;
+  @r
 }
 
-
+# 7Oct2006: I don't care about this right now;
+# presumably it works.  Will look it over for the
+# next release.
 sub pig {
   my $self = shift;
   my @pig;         # what is to be returned, the final result
@@ -128,12 +102,12 @@ sub pig {
   my $i = 0;
   for my $v ($self->peek()) {   # by line
     @piggie = split(/ /, $v);
-    for my $w (@piggie) {	# by word
+    for my $w (@piggie) {       # by word
       "\U$w" eq $w ? $allupper = 1 : $allupper = 0;
       
       # append "way" if word starts with an un'y' vowel
       if (substr($w, 0, 1) =~ /a|e|i|o|u/i) {
-	$allupper ? $w .= "WAY" : $w .= "way";
+        $allupper ? $w .= "WAY" : $w .= "way";
       }
       "\u\L$w" eq $w ? $firstupper = 1 : $firstupper = 0;
       $w =lc $w unless $allupper;
@@ -141,21 +115,21 @@ sub pig {
       # copy leading consonants to the end of the word,
       # not counting "qu"
       until (substr($w, 0, 1) =~ /a|e|i|o|u|y/i) {
-	unless (substr($w, 0, 2) eq "qu") {
-	  $w = join '', reverse unpack ('aa*', $w);
-	}
+        unless (substr($w, 0, 2) eq "qu") {
+          $w = join '', reverse unpack ('aa*', $w);
+        }
       }
       $w .= "ay" unless substr($w,-2,2) eq "ay";
       
       # sickness.
       if ($w =~ /[.!?,%]/s) {
-	$w =~ s/([,.!?])//s;
-	$w .= $1 if $1;
+        $w =~ s/([,.!?])//s;
+        $w .= $1 if $1;
       }
       if ($w =~ /[\$]/s) {
-	$w =~ s/([\$])//s;
-	$w .= $1 if $1;
-      }		
+        $w =~ s/([\$])//s;
+        $w .= $1 if $1;
+      }         
       
       $w = ucfirst $w if $firstupper;
       $piggie[$i++] = $w;
@@ -165,34 +139,25 @@ sub pig {
   return @pig;
 }
 
-
 sub rev {
-  # reverse
   my $self = shift;
-  my @rev;
-  foreach ($self->peek()) {
-    push @rev, scalar reverse $_;
-  }
-  return @rev;
+  map { scalar reverse $_ } $self->peek;
 }
 
-
 sub censor {
-  # mild censorship
   my $self = shift;
   my @censor;
  LINE: foreach my $l ($self->peek()) {
     my @w;
   WORD: foreach my $w (split / /, $l) {
       $w =~ y/aeiouAEIOU/**********/
-	unless (length $w > 10  or  length $w < 4);
+        unless (length $w > 10  or  length $w < 4);
       push @w, $w;
     }
     push @censor, (join ' ', @w);
   }
-  return @censor;
+  @censor;
 }
-
 
 sub n20e {
   # numerical_abbreviation
@@ -203,17 +168,16 @@ sub n20e {
   WORD: foreach my $w (split / /, $l) {
       my $chars = length $w;
       if ($chars <= 6) {
-	push @w, $w;
-	next WORD;
+        push @w, $w;
+        next WORD;
       }
       my @chars = (substr($w, 0, 1), substr($w, -1, 1));
       push @w, ($chars[0] . ($chars - 2) . $chars[1]);
     }
     push @n20e, (join ' ', @w);
   }
-  return @n20e;
+  @n20e;
 }
-
 
 1;
 
@@ -231,8 +195,8 @@ I<Text::Bastardize> - a corruptor of innocent text
 
     my $text = new Text::Bastardize;
     while (my $line = <>) {
-	$text->charge($line);
-	$text->k3wlt0k();
+        $text->charge($line);
+        $text->k3wlt0k;
     }
 
 =head1 DESCRIPTION
@@ -258,17 +222,14 @@ way to do so.
 
 I<peek> returns the object's value.
 
-=item B<rdct>
+=item B<censor>
 
-I<rdct> converts english to hyperreductionist english.
+I<censor> attempts to censor text which might be innaproriate.
 
-(ex. "english" becomes "")
+=item B<disemvowel>
 
-=item B<pig>
-
-I<pig> pig latin.
-
-(ex. "hi there" becomes "ihay erethay")
+I<disemvowel> removes vowels from the text.  Works well with
+annoying/offensive blog posts, I'm told.
 
 =item B<k3wlt0k>
 
@@ -277,25 +238,33 @@ I<k3wlt0k> a k3wlt0kizer developed originally by Fmh.
 The B<SYNOPSIS> has an example of k3wlt0k in use, try tossing that into a file
 and running it with ``sh|perl I<k3wlt0k-filename>'' :-)
 
-=item B<rot13>
-
-I<rot13> implements rot13 "encryption" in perl.
-
-(ex. "foo bar" becomes "sbb one")
-
-=item B<rev>
-
-I<rev> reverses the arrangement of characters.
-
-=item B<censor>
-
-I<censor> attempts to censor text which might be innaproriate.
-
 =item B<n20e>
 
 I<n20e> performs numerical abbreviations.
 
 (ex. "numerical_abbreviation" becomes "n20e")
+
+=item B<pig>
+
+I<pig> pig latin.
+
+(ex. "hi there" becomes "ihay erethay")
+
+=item B<rev>
+
+I<rev> reverses the arrangement of characters.
+
+=item B<rdct>
+
+I<rdct> converts english to hyperreductionist english.
+
+(ex. "english" becomes "")
+
+=item B<rot13>
+
+I<rot13> implements rot13 "encryption" in perl.
+
+(ex. "foo bar" becomes "sbb one")
 
 =back
 
