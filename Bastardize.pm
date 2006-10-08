@@ -1,6 +1,6 @@
 ## -*- Cperl -*-
 package Text::Bastardize;
-$VERSION = 0.07;
+$VERSION = 0.08;
 use strict;
 use warnings;
 
@@ -25,7 +25,7 @@ sub charge {
 
 sub disemvowel {
   my @d = shift->peek;
-  tr/aeiouAEIOU//d for @d;
+  s/\B[aeiou]\B//ig for @d;
   @d
 }
 

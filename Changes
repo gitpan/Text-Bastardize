@@ -12,3 +12,6 @@ Revision history for Perl extension Crypt::Rot13.
         - add disemvowel
         - minor style changes
         - change license from GPL to as-with-perl
+
+0.08  7 Oct 2006
+        - improve disemvowel
